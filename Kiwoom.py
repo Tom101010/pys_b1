@@ -48,6 +48,10 @@ class Kiwoom(QAxWidget):
         ret = self.dynamicCall("GetConnectState()")
         return ret
 
+    def get_login_info(self, tag):
+        ret = self.dynamicCall("GetLoginInfo(QString)", tag)
+        return ret
+
     def set_input_value(self, id, value):
         self.dynamicCall("SetInputValue(QString, QString)", id, value)
 
@@ -65,6 +69,21 @@ class Kiwoom(QAxWidget):
         ret = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
         return ret
 
+    def send_order(self, rqname, screen_no, acc_no, order_type, code, quantity, price, hoga, order_no):
+        self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
+                         [rqname, screen_no, acc_no, order_type, code, quantity, price, hoga, order_no])
+
+    def get_chejan_data(self, fid):
+        ret = self.dynamicCall("GetChejanData(int)", fid)
+        return ret
+
+    def _receive_chejan_data(self, gubun, item_cnt, fid_list):
+        print(gubun)
+        print(self.get_chejan_data(9203))
+        print(self.get_chejan_data(302))
+        print(self.get_chejan_data(900))
+        print(self.get_chejan_data(901))
+
     def _receive_tr_data(self, screen_no, rqname, trcode, record_name, next, unused1, unused2, unused3, unused4):
         if next == '2':
             self.remained_data = True
@@ -73,11 +92,20 @@ class Kiwoom(QAxWidget):
 
         if rqname == "opt10081_req":
             self._opt10081(rqname, trcode)
+        elif rqname == "opw00001_req":
+            self._opw00001(rqname, trcode)
+
+        if rqname == "opt10081_req":
+            self._opt10081(rqname, trcode)
 
         try:
             self.tr_event_loop.exit()
         except AttributeError:
             pass
+
+    def _opw00001(self, rqname, trcode):
+        self.d2_deposit = self._comm_get_data(trcode, "", rqname, 0, "d+2추정예수금")
+        # self.d2_deposit = Kiwoom.change_format(d2_deposit)
 
     def _opt10081(self, rqname, trcode):
         data_cnt = self._get_repeat_cnt(trcode, rqname)
